@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { AuthProvider, useAuth } from '@/hooks/useAuth';
 import AuthPage from '@/pages/AuthPage';
+import CompletarCadastroPage from '@/pages/CompletarCadastroPage';
 import PainelPage from '@/pages/PainelPage';
 import EmBrevePage from '@/pages/EmBrevePage';
 import AppLayout from '@/components/AppLayout';
@@ -25,8 +26,12 @@ function AppInterno() {
     );
   }
 
-  if (!session || !perfil) {
+  if (!session) {
     return <AuthPage />;
+  }
+
+  if (!perfil) {
+    return <CompletarCadastroPage />;
   }
 
   const telaFutura = TECLAS_FUTURAS[tela];

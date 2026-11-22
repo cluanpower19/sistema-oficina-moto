@@ -11,18 +11,20 @@ import type { Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import type { Perfil } from '@/lib/types';
 
+interface DadosOficina {
+  nomeUsuario: string;
+  nomeOficina: string;
+  telefoneOficina: string;
+}
+
 interface AuthContexto {
   session: Session | null;
   perfil: Perfil | null;
   carregando: boolean;
   entrar: (email: string, senha: string) => Promise<string | null>;
-  cadastrar: (dados: {
-    email: string;
-    senha: string;
-    nomeUsuario: string;
-    nomeOficina: string;
-    telefoneOficina: string;
-  }) => Promise<string | null>;
+  entrarComGoogle: () => Promise<string | null>;
+  cadastrar: (email: string, senha: string) => Promise<string | null>;
+  criarOficina: (dados: DadosOficina) => Promise<string | null>;
   sair: () => Promise<void>;
 }
 
@@ -94,26 +96,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [carregarPerfil]
   );
 
+  const entrarComGoogle = useCallback(async (): Promise<string | null> => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin },
+    });
+    if (error) return error.message;
+    return null;
+  }, []);
+
   const cadastrar = useCallback(
-    async (dados: {
-      email: string;
-      senha: string;
-      nomeUsuario: string;
-      nomeOficina: string;
-      telefoneOficina: string;
-    }): Promise<string | null> => {
-      const { data, error } = await supabase.auth.signUp({
-        email: dados.email,
-        password: dados.senha,
-      });
+    async (email: string, senha: string): Promise<string | null> => {
+      const { data, error } = await supabase.auth.signUp({ email, password: senha });
       if (error) return error.message;
-      if (!data.session || !data.user) {
-        return 'Cadastro feito, mas faltou confirmar o e-mail. Faça login.';
+      if (!data.session) {
+        return 'Conta criada, mas faltou confirmar o e-mail. Confirme e faça login.';
       }
+      return null;
+    },
+    []
+  );
 
-      const userId = data.user.id;
+  const criarOficina = useCallback(
+    async (dados: DadosOficina): Promise<string | null> => {
+      const { data: sessao } = await supabase.auth.getSession();
+      const user = sessao.data.session?.user;
+      if (!user) return 'Sessão expirada. Entre novamente.';
+
       const oficinaId = crypto.randomUUID();
-
       const { error: erroOficina } = await supabase.from('oficinas').insert({
         id: oficinaId,
         nome: dados.nomeOficina,
@@ -122,14 +132,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (erroOficina) return erroOficina.message;
 
       const { error: erroUsuario } = await supabase.from('usuarios').insert({
-        id: userId,
+        id: user.id,
         oficina_id: oficinaId,
         nome: dados.nomeUsuario,
         papel: 'dono',
       });
       if (erroUsuario) return erroUsuario.message;
 
-      await carregarPerfil(userId);
+      await carregarPerfil(user.id);
       return null;
     },
     [carregarPerfil]
@@ -142,8 +152,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const valor = useMemo(
-    () => ({ session, perfil, carregando, entrar, cadastrar, sair }),
-    [session, perfil, carregando, entrar, cadastrar, sair]
+    () => ({ session, perfil, carregando, entrar, entrarComGoogle, cadastrar, criarOficina, sair }),
+    [session, perfil, carregando, entrar, entrarComGoogle, cadastrar, criarOficina, sair]
   );
 
   return <AuthContext.Provider value={valor}>{children}</AuthContext.Provider>;
