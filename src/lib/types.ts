@@ -23,3 +23,29 @@ export interface Perfil {
   usuario: Usuario;
   oficina: Oficina;
 }
+
+export interface Cliente {
+  id: string;
+  oficina_id: string;
+  nome: string;
+  telefone: string | null;
+  observacoes: string | null;
+  criado_em: string;
+}
+
+export interface Moto {
+  id: string;
+  oficina_id: string;
+  cliente_id: string;
+  placa: string;
+  marca: string | null;
+  modelo: string | null;
+  ano: number | null;
+  cor: string | null;
+  km_atual: number;
+  criado_em: string;
+}
+
+export interface ClienteComMotos extends Cliente {
+  motos: Moto[];
+}

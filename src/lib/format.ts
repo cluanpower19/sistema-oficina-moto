@@ -12,6 +12,16 @@ export function formatarTelefone(digitos: string): string {
   return digitos;
 }
 
+export function normalizarPlaca(valor: string): string {
+  return valor.toUpperCase().replace(/\s+/g, '').trim();
+}
+
+export function formatarPlaca(valor: string): string {
+  const limpo = valor.toUpperCase().replace(/\s+/g, '');
+  if (limpo.length <= 3) return limpo;
+  return `${limpo.slice(0, 3)}${limpo.slice(3)}`;
+}
+
 export function traduzirErroAuth(mensagem: string): string {
   const m = mensagem.toLowerCase();
   if (m.includes('invalid login credentials')) {
